@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jogo de Bingo</title>
+    <style>
+        .bingo-card {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #000;
+        }
+
+        .bingo-card .column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bingo-card .column .cell {
+            border: 1px solid #000;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bingo-card .column .cell.marked {
+            background-color: #e6e6e6;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo de Bingo</h1>
+
+    <div id="bingo-cards"></div>
+    <div id="drawn-number"></div>
+    <div id="result"></div>
+
+    <div>
+        <label for="player-name">Nome do jogador:</label>
+        <input type="text" id="player-name">
+        <button onclick="createCard()">Criar Cartela</button>
+        <button onclick="restartGame()">Reiniciar Jogo</button>
+    </div>
+
+    <script>
+        class BingoCard {
+            constructor(playerName) {
+                this.playerName = playerName;
+                this.card = this.generateCard();
+            }
+
+            generateCard() {
+                const card = [];
+                const columnRanges = [
+                    { letter: "B", start: 1, end: 15 },
+                    { letter: "I", start: 16, end: 30 },
+                    { letter: "N", start: 31, end: 45 },
+                    { letter: "G", start: 46, end: 60 },
+                    { letter: "O", start: 61, end: 75 }
+                ];
+
+                for (const range of columnRanges) {
+                    const column = this.getRandomNumbers(range.start, range.end, 5);
+                    card.push(column);
+                }
+
+                return card;
+            }
+
+            getRandomNumbers(min, max, count) {
+                const numbers = new Set();
+                while (numbers.size < count) {
+                    const number = Math.floor(Math.random() * (max - min + 1)) + min;
+                    numbers.add(number);
+                }
+                return Array.from(numbers);
+            }
+        }
+
+        class BingoGame {
+            constructor() {
+                this.cards = [];
+                this.calledNumbers = new Set();
+                this.drawnNumberElement = document.getElementById("drawn-number");
+                this.resultElement = document.getElementById("result");
+            }
+
+            createCard() {
+                const playerName = document.getElementById("player-name").value;
+                if (playerName) {
+                    const card = new BingoCard(playerName);
+                    this.cards.push(card);
+                    this.displayCards();
+                }
+            }
+
+            displayCards() {
+                const bingoCardsElement = document.getElementById("bingo-cards");
+                bingoCardsElement.innerHTML = "";
+
+                for (const card of this.cards) {
+                    const cardElement = document.createElement("div");
+                    cardElement.classList.add("bingo-card");
+                    cardElement.innerHTML = `<h3>${card.playerName}</h3>`;
+
+                    for (let i = 0; i < 5; i++) {
+                        const columnElement = document.createElement("div");
+                        columnElement.classList.add("column");
+
+                        for (const number of card.card[i]) {
+                            const cellElement = document.createElement("div");
+                            cellElement.classList.add("cell");
+                            cellElement.textContent = number;
+                            columnElement.appendChild(cellElement);
+                        }
+
+                        cardElement.appendChild(columnElement);
+                    }
+
+                    bingoCardsElement.appendChild(cardElement);
+                }
+            }
+
+            restartGame() {
+                this.cards = [];
+                this.calledNumbers = new Set();
+                this.drawnNumberElement.innerText = "";
+                this.resultElement.innerText = "";
+                this.displayCards();
+            }
+
+            drawNumber() {
+                let number = Math.floor(Math.random() * 75) + 1;
+                while (this.calledNumbers.has(number)) {
+                    number = Math.floor(Math.random() * 75) + 1;
+                }
+
+                this.calledNumbers.add(number);
+                this.drawnNumberElement.innerText = "Número sorteado: " + number;
+
+                for (const card of this.cards) {
+                    this.markNumber(card, number);
+                    if (this.isWinner(card)) {
+                        this.resultElement.innerText = "Jogador ganhou!";
+                    }
+                }
+            }
+
+            markNumber(card, number) {
+                for (let i = 0; i < 5; i++) {
+                    const column = card.card[i];
+                    const index = column.indexOf(number);
+                    if (index !== -1) {
+                        column[index] = "X";
+                        break;
+                    }
+                }
+            }
+
+            isWinner(card) {
+                for (const column of card.card) {
+                    if (column.every(cell => cell === "X")) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            play() {
+                this.displayCards();
+                setInterval(() => this.drawNumber(), 1000);
+            }
+        }
+
+        const game = new BingoGame();
+
+        function createCard() {
+            game.createCard();
+        }
+
+        function restartGame() {
+            game.restartGame();
+        }
+
+        game.play();
+    </script>
+</body>
+</html>
